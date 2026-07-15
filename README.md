@@ -4,6 +4,14 @@ A real-ephemeris astrology app for iOS: natal charts, transits, progressions & r
 
 Split out of the [Astrolabe](../Astrolabe) planetarium app — same math engine, one focused product.
 
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/astro-home.png" width="240"><br><sub><b>The hub</b> — today, live sky, charts</sub></td>
+    <td align="center"><img src="docs/screenshots/natal-chart.png" width="240"><br><sub><b>Natal chart</b> — wheel, patterns, readings</sub></td>
+    <td align="center"><img src="docs/screenshots/sphere.png" width="240"><br><sub><b>3D celestial sphere</b> — your sky as a globe</sub></td>
+  </tr>
+</table>
+
 ## Setup
 
 Requires sibling checkouts (packages are referenced by relative path):
