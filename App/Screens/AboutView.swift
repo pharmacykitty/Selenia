@@ -147,7 +147,7 @@ enum SourceCatalog {
                         license: "Public domain",
                         url: "https://github.com/astronexus/HYG-Database"),
             SourceEntry(name: "Hipparcos & Tycho Catalogues",
-                        detail: "ESA's astrometric survey — the parallax distances and precise positions underlying the HYG data.",
+                        detail: "ESA's astrometric survey — the precise star positions underlying the HYG data. (This app uses sky directions only; the sister Astrolabe app uses the parallax distances too.)",
                         license: "ESA / public"),
             SourceEntry(name: "Constellation lines",
                         detail: "Stick-figure constellation geometry from the d3-celestial project by Olaf Frohn, drawn faintly on the celestial sphere.",
