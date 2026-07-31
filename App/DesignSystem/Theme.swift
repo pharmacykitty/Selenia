@@ -42,6 +42,33 @@ enum Theme {
         colors: [Color(red: 0.03, green: 0.04, blue: 0.12), .black],
         startPoint: .top, endPoint: .bottom
     )
+
+    /// The night's own ink: a deep blue-black derived from `spaceGradient`, used
+    /// (translucent) as the fill of utility surfaces. Neutral materials over the
+    /// near-black sky render as flat *gray* slabs — this keeps the chrome in the
+    /// night's palette instead of on top of it. (Ported from Astrolabe 2026-07-30.)
+    static let nightInk = Color(red: 0.06, green: 0.08, blue: 0.16)
+
+    // MARK: Text emphasis (ported from Astrolabe 2026-07-28)
+
+    // One vocabulary for text over the dark sky instead of ad-hoc opacities.
+    // Primary text is plain `.white`; informational text never drops below
+    // `textTertiary` — that's the legibility floor on black.
+    static let textSecondary = Color.white.opacity(0.65)
+    static let textTertiary = Color.white.opacity(0.55)
+
+    // MARK: Motion (ported from Astrolabe 2026-07-28)
+
+    /// The app's one motion curve for chrome: every state-driven show/hide,
+    /// selection change, and layout shift animates with this spring so the whole
+    /// UI moves like a single instrument.
+    static let spring = Animation.spring(duration: 0.35, bounce: 0.15)
+
+    /// How chrome enters and leaves: sliding from the nearest screen edge while
+    /// fading. Pass the edge the element lives against.
+    static func slide(from edge: Edge) -> AnyTransition {
+        .move(edge: edge).combined(with: .opacity)
+    }
 }
 
 extension View {
@@ -60,5 +87,19 @@ extension View {
                     .strokeBorder(tint.opacity(0.35), lineWidth: 1)
             }
             .shadow(color: tint.opacity(0.25), radius: glow)
+    }
+
+    /// The quieter sibling of `luminousSurface`, for utility panels over live
+    /// content (readouts, legends, plot insets): night ink and a hairline ring,
+    /// untinted and glowless, so it recedes instead of glowing. Deliberately NOT
+    /// a neutral material — over the near-black sky those render as gray slabs.
+    /// (Ported from Astrolabe 2026-07-30.)
+    func quietSurface(cornerRadius: CGFloat = Theme.cardRadius) -> some View {
+        background(Theme.nightInk.opacity(0.55), in: .rect(cornerRadius: cornerRadius))
+            .clipShape(.rect(cornerRadius: cornerRadius))
+            .overlay {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .strokeBorder(.white.opacity(0.12), lineWidth: 0.5)
+            }
     }
 }
