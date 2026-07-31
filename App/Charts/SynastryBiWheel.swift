@@ -151,14 +151,7 @@ struct CompositeWheel: View {
 
 /// Shared colour helpers for the relationship wheels.
 enum SynastryStyle {
-    static func element(_ e: ZodiacSign.Element) -> Color {
-        switch e {
-        case .fire: Color(red: 1.0, green: 0.5, blue: 0.4)
-        case .earth: Color(red: 0.5, green: 0.85, blue: 0.55)
-        case .air: Color(red: 0.95, green: 0.85, blue: 0.5)
-        case .water: Color(red: 0.5, green: 0.75, blue: 1.0)
-        }
-    }
+    static func element(_ e: ZodiacSign.Element) -> Color { Theme.element(e) }
 
     static func aspect(_ k: AspectKind) -> Color {
         switch k {

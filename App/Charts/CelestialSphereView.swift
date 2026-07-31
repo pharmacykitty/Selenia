@@ -119,12 +119,13 @@ struct CelestialSphereView: View {
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button("What am I seeing?", systemImage: "questionmark.circle") { showGuide = true }
-                    .tint(Theme.astro)
-            }
-            ToolbarItem(placement: .topBarTrailing) {
+        // The luminous circle language instead of the system toolbar's neutral
+        // glass pill — the one chrome element that didn't match the sisters'.
+        .overlay(alignment: .topTrailing) {
+            HStack(spacing: 10) {
+                CircleIconButton(label: "What am I seeing?", systemImage: "questionmark") {
+                    showGuide = true
+                }
                 Menu {
                     Button {
                         withAnimation { toggleTour() }
@@ -142,10 +143,12 @@ struct CelestialSphereView: View {
                     Button("Export rotation…", systemImage: "square.and.arrow.up") { showExportDialog = true }
                         .disabled(geo == nil || exporting)
                 } label: {
-                    Image(systemName: "ellipsis.circle")
+                    CircleIconLabel(systemImage: "ellipsis",
+                                    isActive: tourActive || showTime)
                 }
-                .tint(Theme.astro)
+                .accessibilityLabel("Sphere options")
             }
+            .padding(.trailing, 16)
         }
         .sheet(isPresented: $showGuide) {
             SphereGuideSheet(chart: chart)

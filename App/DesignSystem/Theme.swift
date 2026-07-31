@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import Astrology
 
 extension EdgeInsets {
     /// The key window's safe-area insets. Full-bleed screens (which `ignoresSafeArea`
@@ -33,9 +34,22 @@ enum Theme {
     /// dark sky; the default for neutral controls.
     static let accent = Color(red: 0.56, green: 0.72, blue: 1.0)
 
-    /// The astrology feature tint — the warm gold of the chart wheel and hub
-    /// cards (was the astrology screen tint before the app split).
-    static let astro = Color.yellow
+    /// The astrology feature tint — the icon's engraved gold (#E3C37C), NOT raw
+    /// system yellow: the app should match the mark on the home screen. (Swapped
+    /// 2026-07-31 in the UI round; system yellow was the loudest thing in the app.)
+    static let astro = Color(red: 0.89, green: 0.765, blue: 0.486)
+
+    /// One element palette for every surface that colours by element (wheel sign
+    /// glyphs, synastry bi-wheel, the big-three chips) — previously duplicated
+    /// per-view, and the chips ignored it entirely (uniform yellow).
+    static func element(_ e: ZodiacSign.Element) -> Color {
+        switch e {
+        case .fire: Color(red: 1.0, green: 0.5, blue: 0.4)
+        case .earth: Color(red: 0.5, green: 0.85, blue: 0.55)
+        case .air: Color(red: 0.95, green: 0.85, blue: 0.5)
+        case .water: Color(red: 0.5, green: 0.75, blue: 1.0)
+        }
+    }
 
     /// The deep-space background gradient shared by detail and placeholder screens.
     static let spaceGradient = LinearGradient(

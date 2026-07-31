@@ -16,6 +16,9 @@ struct ChartWheel: View {
         Canvas { ctx, size in
             let center = CGPoint(x: size.width / 2, y: size.height / 2)
             let rOuter = min(size.width, size.height) / 2 - 6
+            // At card size (the home hub preview) the full wheel reads as scribble:
+            // show only the major aspects, and give the sign glyphs a step more size.
+            let compact = min(size.width, size.height) < 240
             let rZodiac = rOuter * 0.82   // inner edge of the sign ring
             let rHouse = rOuter * 0.30    // inner house circle
             let rBody = rOuter * 0.56     // radius bodies are plotted at
@@ -43,7 +46,8 @@ struct ChartWheel: View {
 
                 let mid = start + 15
                 let glyphPoint = point(mid, (rOuter + rZodiac) / 2)
-                ctx.draw(Text(sign.glyph).font(.system(size: 15)).foregroundStyle(elementColor(sign.element)),
+                ctx.draw(Text(sign.glyph).font(.system(size: compact ? 17 : 15))
+                            .foregroundStyle(Theme.element(sign.element)),
                          at: glyphPoint)
             }
 
@@ -74,20 +78,21 @@ struct ChartWheel: View {
                 let pt = point(p.longitude.degrees, rBody)
                 // A small luminous dot + glyph.
                 ctx.fill(Path(ellipseIn: CGRect(x: pt.x - 2, y: pt.y - 2, width: 4, height: 4)),
-                         with: .color(.yellow.opacity(0.9)))
+                         with: .color(Theme.astro.opacity(0.9)))
                 let glyphPoint = point(p.longitude.degrees, rBody - 16)
                 ctx.draw(Text(p.body.glyph).font(.system(size: 15, weight: .medium)).foregroundStyle(.white),
                          at: glyphPoint)
             }
 
-            // Aspect lines across the inner circle.
+            // Aspect lines across the inner circle (majors only at card size).
             for a in chart.aspects {
+                if compact && !a.kind.isMajor { continue }
                 guard let pa = chart.position(of: a.bodyA), let pb = chart.position(of: a.bodyB) else { continue }
                 let from = point(pa.longitude.degrees, rHouse)
                 let to = point(pb.longitude.degrees, rHouse)
                 ctx.stroke(Path { p in p.move(to: from); p.addLine(to: to) },
-                           with: .color(aspectColor(a.kind).opacity(0.5)),
-                           lineWidth: a.kind.isMajor ? 1.0 : 0.5)
+                           with: .color(aspectColor(a.kind).opacity(compact ? 0.45 : 0.5)),
+                           lineWidth: compact ? 0.8 : (a.kind.isMajor ? 1.0 : 0.5))
             }
         }
         .accessibilityElement()
@@ -103,15 +108,6 @@ struct ChartWheel: View {
 
     private func roman(_ n: Int) -> String {
         ["I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII"][n - 1]
-    }
-
-    private func elementColor(_ e: ZodiacSign.Element) -> Color {
-        switch e {
-        case .fire: return Color(red: 1.0, green: 0.5, blue: 0.4)
-        case .earth: return Color(red: 0.5, green: 0.85, blue: 0.55)
-        case .air: return Color(red: 0.95, green: 0.85, blue: 0.5)
-        case .water: return Color(red: 0.5, green: 0.75, blue: 1.0)
-        }
     }
 
     private func aspectColor(_ k: AspectKind) -> Color {

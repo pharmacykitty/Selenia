@@ -26,6 +26,7 @@ struct AstrologyHomeView: View {
             Theme.spaceGradient.ignoresSafeArea()
             ScrollView {
                 VStack(spacing: 16) {
+                    header
                     todaySection
                     livePreview
                     NavigationLink { SkyNowView(store: store) } label: {
@@ -48,12 +49,26 @@ struct AstrologyHomeView: View {
                 .padding(20)
             }
         }
-        .navigationTitle("Ecliptica")
+        // The serif hero below owns the name (the sister apps' shared voice);
+        // a nav-bar "Ecliptica" directly above it would print it twice.
         .navigationBarTitleDisplayMode(.inline)
         .buttonStyle(.plain)
         .task { await model.start() }
         .task(id: selectedChart?.persistentModelID) { await loadDaily() }
         .sheet(isPresented: $editing) { ChartEditorView() }
+    }
+
+    /// The serif hero — the same large-title voice Astrolabe's screens open with.
+    private var header: some View {
+        VStack(spacing: 4) {
+            Text("Ecliptica")
+                .font(.system(.largeTitle, design: .serif).weight(.bold))
+                .foregroundStyle(.white)
+            Text("The sky, read for you")
+                .font(.subheadline).foregroundStyle(.white.opacity(0.6))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 6)
     }
 
     // MARK: Today (F8)
@@ -127,21 +142,26 @@ struct AstrologyHomeView: View {
         .overlay(RoundedRectangle(cornerRadius: Theme.panelRadius).strokeBorder(tint.opacity(0.35), lineWidth: 1))
     }
 
+    /// Pre-chart, the empty state is one quiet row — the live wheel below leads
+    /// the page instead of a large glowing placeholder pinned above the fold.
     private var savePrompt: some View {
-        VStack(spacing: 10) {
-            LuminousGlyph(symbol: "sparkles", tint: tint, size: 52, glyphSize: 22)
-            Text("Your daily reading").font(.headline).foregroundStyle(.white)
-            Text("Save a birth chart to get a reading of how today's sky touches you.")
-                .font(.caption).foregroundStyle(.white.opacity(0.6))
-                .multilineTextAlignment(.center)
+        HStack(spacing: 12) {
+            LuminousGlyph(symbol: "sparkles", tint: tint, size: 40, glyphSize: 17)
+            Text("Save a birth chart for your daily reading.")
+                .font(.subheadline).foregroundStyle(.white.opacity(0.7))
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer()
             Button { editing = true } label: {
-                Label("New Chart", systemImage: "plus")
+                Label("New Chart", systemImage: "plus").font(.subheadline.weight(.medium))
             }
-            .buttonStyle(.borderedProminent).tint(tint).padding(.top, 2)
+            .buttonStyle(.borderedProminent).tint(tint)
         }
-        .frame(maxWidth: .infinity)
-        .padding(20)
-        .luminousSurface(tint, cornerRadius: Theme.panelRadius, glow: 12)
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .background(Theme.nightInk.opacity(0.55), in: .rect(cornerRadius: Theme.cardRadius))
+        .overlay {
+            RoundedRectangle(cornerRadius: Theme.cardRadius)
+                .strokeBorder(.white.opacity(0.12), lineWidth: 0.5)
+        }
     }
 
     // MARK: Live preview (existing)
@@ -167,14 +187,20 @@ struct AstrologyHomeView: View {
             Text(label.uppercased())
                 .font(.caption.weight(.semibold)).tracking(1.2)
                 .foregroundStyle(.white.opacity(0.5))
+            // The glyph takes its sign's element colour (the wheel's own palette)
+            // instead of flattening all three to gold.
             Text(pos?.sign.glyph ?? "–")
-                .font(.title2).foregroundStyle(tint)
+                .font(.title2)
+                .foregroundStyle(pos.map { Theme.element($0.sign.element) } ?? tint)
             Text(pos?.sign.name ?? "—")
                 .font(.caption).foregroundStyle(.white)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 10)
-        .background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
+        .background(Theme.nightInk.opacity(0.55), in: RoundedRectangle(cornerRadius: 12))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12).strokeBorder(.white.opacity(0.1), lineWidth: 0.5)
+        }
     }
 
     // MARK: Loading
@@ -209,6 +235,7 @@ struct HubCard: View {
                 .foregroundStyle(tint.opacity(0.6))
         }
         .padding(16)
-        .luminousSurface(tint, cornerRadius: Theme.panelRadius, glow: 12)
+        // Hairline rim only — when every card glows, nothing does.
+        .luminousSurface(tint, cornerRadius: Theme.panelRadius, glow: 0)
     }
 }

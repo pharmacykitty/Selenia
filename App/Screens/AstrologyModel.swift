@@ -50,9 +50,11 @@ final class AstrologyModel: NSObject, CLLocationManagerDelegate {
         guard let coord = locations.last?.coordinate else { return }
         Task { @MainActor in
             self.chart = AstrologyModel.makeChart(at: coord)
+            // "37.8°N 122.4°W", not "-122.41°" — signed decimals are for CSVs.
             self.locationLabel = String(
-                format: "%.2f°, %.2f° · live sky",
-                coord.latitude, coord.longitude
+                format: "%.1f°%@ %.1f°%@ · live sky",
+                abs(coord.latitude), coord.latitude >= 0 ? "N" : "S",
+                abs(coord.longitude), coord.longitude >= 0 ? "E" : "W"
             )
         }
     }

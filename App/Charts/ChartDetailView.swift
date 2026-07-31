@@ -37,6 +37,13 @@ struct ChartDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
+                // Serif hero — the sister apps' shared voice; the nav bar stays
+                // untitled so the name isn't printed twice.
+                Text(title)
+                    .font(.system(.largeTitle, design: .serif).weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
                 bigThree
                 if !patterns.isEmpty { patternChips }
                 ChartWheel(chart: chart)
@@ -73,7 +80,6 @@ struct ChartDetailView: View {
             .padding(.bottom, 40)
         }
         .background(Theme.spaceGradient.ignoresSafeArea())
-        .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
@@ -132,7 +138,9 @@ struct ChartDetailView: View {
                 Text(label.uppercased())
                     .font(.caption.weight(.semibold)).tracking(1.5)
                     .foregroundStyle(.white.opacity(0.5))
-                Text(pos?.sign.glyph ?? "–").font(.largeTitle).foregroundStyle(tint)
+                // Element colour, not uniform gold — the wheel's own palette.
+                Text(pos?.sign.glyph ?? "–").font(.largeTitle)
+                    .foregroundStyle(pos.map { Theme.element($0.sign.element) } ?? tint)
                 Text(pos?.sign.name ?? "—").font(.subheadline.weight(.medium)).foregroundStyle(.white)
             }
             .frame(maxWidth: .infinity)
@@ -209,7 +217,7 @@ struct ChartDetailView: View {
                 }
                 .contentShape(Rectangle())
                 .padding(16)
-                .luminousSurface(tint, cornerRadius: Theme.panelRadius, glow: 12)
+                .luminousSurface(tint, cornerRadius: Theme.panelRadius, glow: 0)
             }
             .buttonStyle(.plain)
         }
@@ -235,7 +243,7 @@ struct ChartDetailView: View {
                 }
                 .contentShape(Rectangle())
                 .padding(16)
-                .luminousSurface(tint, cornerRadius: Theme.panelRadius, glow: 12)
+                .luminousSurface(tint, cornerRadius: Theme.panelRadius, glow: 0)
             }
             .buttonStyle(.plain)
         }
@@ -252,7 +260,7 @@ struct ChartDetailView: View {
             }
         }
         .padding(16)
-        .luminousSurface(tint, cornerRadius: Theme.panelRadius, glow: 12)
+        .luminousSurface(tint, cornerRadius: Theme.panelRadius, glow: 0)
     }
 
     private func houseRulerRow(_ h: Int) -> some View {
@@ -317,7 +325,7 @@ struct ChartDetailView: View {
             }
         }
         .padding(16)
-        .luminousSurface(tint, cornerRadius: Theme.panelRadius, glow: 12)
+        .luminousSurface(tint, cornerRadius: Theme.panelRadius, glow: 0)
     }
 
     private func positionRow(_ p: BodyPosition, cyan: Bool) -> some View {
@@ -394,7 +402,7 @@ struct ChartDetailView: View {
             }
         }
         .padding(16)
-        .luminousSurface(tint, cornerRadius: Theme.panelRadius, glow: 12)
+        .luminousSurface(tint, cornerRadius: Theme.panelRadius, glow: 0)
     }
 
     // MARK: Helpers
