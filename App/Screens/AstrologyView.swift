@@ -15,19 +15,31 @@ struct SkyNowView: View {
             subtitle: model.locationLabel,
             toolbarTrailing: AnyView(
                 NavigationLink {
-                    CelestialSphereView(chart: model.chart, title: "Sky Now",
-                                        stars: SphereStars.bright(from: store),
-                                        constellations: store?.constellations ?? [])
+                    sphereDestination
                 } label: {
                     Image(systemName: "globe").accessibilityLabel("View in 3D sphere")
                 }
                 .tint(Theme.astro)
+            ),
+            sphereInvite: AnyView(
+                NavigationLink {
+                    sphereDestination
+                } label: {
+                    SphereDomeCard(chart: model.chart, store: store)
+                }
+                .buttonStyle(.plain)
             )
         )
         .task {
             store?.loadIfNeeded()
             await model.start()
         }
+    }
+
+    private var sphereDestination: some View {
+        CelestialSphereView(chart: model.chart, title: "Sky Now",
+                            stars: SphereStars.bright(from: store),
+                            constellations: store?.constellations ?? [])
     }
 }
 

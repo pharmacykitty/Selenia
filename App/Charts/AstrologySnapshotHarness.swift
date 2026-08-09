@@ -27,10 +27,18 @@ struct AstrologySnapshotHarness: View {
             case "relationships":
                 NavigationStack { RelationshipsView(store: store) }
                     .modelContainer(Self.sampleContainer)
+            case "relationships-empty":
+                NavigationStack { RelationshipsView(store: store) }
+                    .modelContainer(Self.emptyContainer)
             case "synastry":
                 SynastrySnapshot().modelContainer(Self.sampleContainer)
             case "saved":
                 SavedSnapshot(store: store).modelContainer(Self.sampleContainer)
+            case "dome":
+                ZStack {
+                    Theme.spaceGradient.ignoresSafeArea()
+                    SphereDomeCard(chart: sample, store: store).padding(20)
+                }
             case "guide":
                 SphereGuideSheet(chart: sample)
             case "progressions":
@@ -46,12 +54,28 @@ struct AstrologySnapshotHarness: View {
             default: // "detail"
                 NavigationStack {
                     ChartDetailView(chart: sample, title: "Sample",
-                                    subtitle: "19 Nov 1971 · Seattle", natalForTransits: sample)
+                                    subtitle: "19 Nov 1971 · Seattle", natalForTransits: sample,
+                                    sphereInvite: AnyView(
+                                        NavigationLink {
+                                            CelestialSphereView(chart: sample, title: "Sample",
+                                                                stars: SphereStars.bright(from: store),
+                                                                constellations: store.constellations)
+                                        } label: {
+                                            SphereDomeCard(chart: sample, store: store)
+                                        }
+                                        .buttonStyle(.plain)
+                                    ))
                 }
             }
         }
         .task { store.loadIfNeeded() }
     }
+
+    /// An empty in-memory container for the Relationships empty state.
+    @MainActor static let emptyContainer: ModelContainer = {
+        try! ModelContainer(for: SavedChart.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    }()
 
     /// An in-memory container with two sample charts for the relationship screens.
     @MainActor static let sampleContainer: ModelContainer = {

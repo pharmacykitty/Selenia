@@ -56,13 +56,33 @@ xcrun simctl io booted screenshot shot.png
 
 Debug launch args (screenshot harnesses): `-snapshotSphere [tour|time]`, `-exportTest`, `-snapshotAstro <screen>`.
 
-## Backlog — UX feedback round (2026-08-08, Kagarino via Discord + Elysia; queued next)
+## Backlog — UX feedback round (2026-08-08, Kagarino via Discord + Elysia)
 
-- Remove horizontal scrolling (app-wide — find which screens overflow horizontally).
-- Sky Now: move the `?` / `…` buttons higher (into the top chrome; they float in a band below the nav bar).
-- Sky Now sphere: performance pass — "very laggy and uses CPU".
-- Make the sphere a visible invitation to tap ("make the thing with the globe more prominent").
-- Relationships empty state ("Save two charts first"): add a create-chart button in place.
+- ✅ Remove horizontal scrolling (2026-08-09): the only offender was the pattern-chips
+  `ScrollView(.horizontal)` in `ChartDetailView` — now wraps via `FlowLayout`
+  (`App/DesignSystem/FlowLayout.swift`).
+- ✅ Sphere `?` / `…` buttons moved into the nav bar (2026-08-09): `ToolbarItemGroup`
+  keeping the `CircleIconButton` language; `sharedBackgroundVisibility(.hidden)` on
+  iOS 26+ so the system glass pill doesn't double the chrome.
+- ✅ Sphere performance pass (2026-08-09): `SphereGeometry` pre-groups stars
+  (colour×alpha) and the Milky Way (glow band) so the per-frame draw is a handful of
+  batched path fills instead of ~1,700 individual ones; spikes/planet-glows collapsed
+  to one blur layer each; ticks/cusp dots batched; `TimelineView` capped at 30 fps;
+  opaque Canvas. Simulator CPU ~28% → ~14% while spinning; device should gain more
+  (blur layer count fell ~30 → 4/frame). On-device verify pending.
+- ✅ Relationships empty state (2026-08-09): "New Chart" button opens `ChartEditorView`
+  in place; copy adapts when one chart exists. Snapshot harness gained
+  `-snapshotAstro relationships-empty`.
+- ✅ Sphere as a visible invitation (2026-08-09, option B approved from
+  https://claude.ai/code/artifact/89d553e2-e204-42e3-bfbc-e9a0351576f9):
+  `SphereDomeCard` — a live miniature globe rising like a dome out of a wide card
+  below the wheel (ecliptic band + planets + brightest stars + tightest chords),
+  24 fps, pauses off-screen (`onScrollVisibilityChange`), honours Reduce Motion.
+  Built in the **ecliptic frame** (pole up, high pitch) so the planet band always
+  arcs across the card's crop regardless of chart. Wired on Sky Now and
+  SavedChartView via `ChartDetailView(sphereInvite:)`; nav-bar globe kept.
+  Harness: `-snapshotAstro dome` shows the card alone. Gotcha: the card must
+  rebuild when `store.catalog` finishes loading (task id includes star count).
 
 ## Backlog (carried from the split)
 

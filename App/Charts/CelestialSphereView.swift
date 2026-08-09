@@ -77,14 +77,18 @@ struct CelestialSphereView: View {
             ZStack {
                 Color.black.ignoresSafeArea()
                 if let geo {
-                    TimelineView(.animation(paused: frozenYaw != nil && !tourActive)) { tl in
+                    // 30 fps is indistinguishable at one turn per minute and
+                    // quarters the render cost on ProMotion displays.
+                    TimelineView(.animation(minimumInterval: 1.0 / 30.0,
+                                            paused: frozenYaw != nil && !tourActive)) { tl in
                         // The camera spins gently unless frozen (a tap) or while
                         // time-travelling (then the *sky* moves, so the camera holds).
                         let spinning = frozenYaw == nil && !playingTime
                         let base = frozenYaw ?? (spinning ? tl.date.timeIntervalSinceReferenceDate * Self.spinRate + dragYaw : dragYaw)
                         let yaw = base + live.yaw
                         let p = clampPitch(pitch + live.pitch)
-                        Canvas { ctx, sz in
+                        Canvas(opaque: true) { ctx, sz in
+                            ctx.fill(Path(CGRect(origin: .zero, size: sz)), with: .color(.black))
                             geo.draw(in: ctx, size: sz, yaw: yaw, pitch: p,
                                      highlight: highlightSet, phase: tl.date.timeIntervalSinceReferenceDate)
                         }
@@ -119,36 +123,17 @@ struct CelestialSphereView: View {
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.hidden, for: .navigationBar)
-        // The luminous circle language instead of the system toolbar's neutral
-        // glass pill — the one chrome element that didn't match the sisters'.
-        .overlay(alignment: .topTrailing) {
-            HStack(spacing: 10) {
-                CircleIconButton(label: "What am I seeing?", systemImage: "questionmark") {
-                    showGuide = true
-                }
-                Menu {
-                    Button {
-                        withAnimation { toggleTour() }
-                    } label: {
-                        Label(tourActive ? "Stop tour" : "Guided tour",
-                              systemImage: tourActive ? "stop.circle" : "play.circle")
-                    }
-                    Button {
-                        withAnimation { toggleTime() }
-                    } label: {
-                        Label(showTime ? "Hide time travel" : "Time travel",
-                              systemImage: "clock.arrow.circlepath")
-                    }
-                    Divider()
-                    Button("Export rotation…", systemImage: "square.and.arrow.up") { showExportDialog = true }
-                        .disabled(geo == nil || exporting)
-                } label: {
-                    CircleIconLabel(systemImage: "ellipsis",
-                                    isActive: tourActive || showTime)
-                }
-                .accessibilityLabel("Sphere options")
+        // The ?/… controls live in the nav bar itself (2026-08-08 feedback:
+        // they floated in a band below it), still speaking the luminous circle
+        // language — on iOS 26+ the system's glass pill is hidden so the
+        // chrome isn't doubled.
+        .toolbar {
+            if #available(iOS 26.0, *) {
+                ToolbarItemGroup(placement: .topBarTrailing) { sphereChrome }
+                    .sharedBackgroundVisibility(.hidden)
+            } else {
+                ToolbarItemGroup(placement: .topBarTrailing) { sphereChrome }
             }
-            .padding(.trailing, 16)
         }
         .sheet(isPresented: $showGuide) {
             SphereGuideSheet(chart: chart)
@@ -184,6 +169,34 @@ struct CelestialSphereView: View {
             if debugMode == "time" { showTime = true; timeOffsetHours = 6 }
         }
         .task(id: interactionTick) { await runIdleTour() }
+    }
+
+    /// The ? and … controls, shared by both toolbar availability branches.
+    @ViewBuilder private var sphereChrome: some View {
+        CircleIconButton(label: "What am I seeing?", systemImage: "questionmark") {
+            showGuide = true
+        }
+        Menu {
+            Button {
+                withAnimation { toggleTour() }
+            } label: {
+                Label(tourActive ? "Stop tour" : "Guided tour",
+                      systemImage: tourActive ? "stop.circle" : "play.circle")
+            }
+            Button {
+                withAnimation { toggleTime() }
+            } label: {
+                Label(showTime ? "Hide time travel" : "Time travel",
+                      systemImage: "clock.arrow.circlepath")
+            }
+            Divider()
+            Button("Export rotation…", systemImage: "square.and.arrow.up") { showExportDialog = true }
+                .disabled(geo == nil || exporting)
+        } label: {
+            CircleIconLabel(systemImage: "ellipsis",
+                            isActive: tourActive || showTime)
+        }
+        .accessibilityLabel("Sphere options")
     }
 
     /// After a spell of no interaction, gently begin the guided tour on its own.
@@ -714,9 +727,15 @@ private struct SphereFrame: View {
 }
 
 /// Precomputed sphere geometry (horizon-frame base vectors). Built once per chart;
-/// rotation/projection happen per frame in `draw`.
-private struct SphereGeometry {
-    struct StarDot { let v: SIMD3<Double>; let color: Color; let size: Double; let alpha: Double; let spike: Double }
+/// rotation/projection happen per frame in `draw`. Internal (not private) so
+/// `SphereDomeCard` can share the palette and frame helpers.
+struct SphereGeometry {
+    /// Stars pre-grouped by resolved colour (temperature bucket × quantised
+    /// alpha) so the whole field renders as a handful of batched path fills
+    /// per frame instead of ~900 individual ones.
+    struct StarGroup { let color: Color; let dots: [(v: SIMD3<Double>, size: Double)] }
+    /// The few brightest stars that get a diffraction-spike sparkle.
+    struct SpikeStar { let v: SIMD3<Double>; let color: Color; let spike: Double }
     struct Planet { let v: SIMD3<Double>; let body: AstroBody; let retro: Bool }
     struct AspectArc {
         let a: SIMD3<Double>; let b: SIMD3<Double>
@@ -732,8 +751,9 @@ private struct SphereGeometry {
     let houseNumbers: [(v: SIMD3<Double>, label: String)]
     let zodiac: [(v: SIMD3<Double>, glyph: String)]
     let constellationSegments: [(a: SIMD3<Double>, b: SIMD3<Double>)]
-    let milkyWay: [(v: SIMD3<Double>, glow: Double)]
-    let starField: [StarDot]
+    let milkyWayGroups: [(glow: Double, points: [SIMD3<Double>])]
+    let starGroups: [StarGroup]
+    let spikeStars: [SpikeStar]
     let planets: [Planet]
     let aspects: [AspectArc]
     /// Index (into `aspects`) of the single tightest aspect — pulsed in the draw.
@@ -802,16 +822,28 @@ private struct SphereGeometry {
         }
 
         // Real star field: brightest first, capped for a clean, fast render.
+        // Grouped up front by (temperature bucket × alpha step) so the draw
+        // loop batches each group into a single path fill.
         let bright = stars.sorted { $0.apparentMagnitude < $1.apparentMagnitude }.prefix(900)
-        starField = bright.map { s in
+        var groupMap: [Int: [(v: SIMD3<Double>, size: Double)]] = [:]
+        var spikes: [SpikeStar] = []
+        for s in bright {
             let m = s.apparentMagnitude
-            return StarDot(v: vecEquatorial(s.equatorial),
-                           color: SphereGeometry.starColor(s.colorIndex),
-                           size: max(0.5, 2.3 - 0.34 * m),
-                           alpha: max(0.18, min(1.0, 1.15 - 0.16 * m)),
-                           // Diffraction-spike sparkle for the few brightest stars.
-                           spike: m < 1.6 ? (8.0 - 3.0 * m) : 0)
+            let v = vecEquatorial(s.equatorial)
+            let alpha = max(0.18, min(1.0, 1.15 - 0.16 * m))
+            let key = SphereGeometry.colorBucket(s.colorIndex) * 100 + Int((alpha * 10).rounded())
+            groupMap[key, default: []].append((v, max(0.5, 2.3 - 0.34 * m)))
+            if m < 1.6 {   // diffraction-spike sparkle for the few brightest
+                spikes.append(SpikeStar(v: v,
+                                        color: SphereGeometry.starColor(s.colorIndex).opacity(alpha * 0.7),
+                                        spike: 8.0 - 3.0 * m))
+            }
         }
+        starGroups = groupMap.map { key, dots in
+            StarGroup(color: SphereGeometry.bucketColors[key / 100].opacity(Double(key % 100) / 10),
+                      dots: dots)
+        }
+        spikeStars = spikes
 
         // Constellation stick-figures (RA/Dec polylines) → horizon-frame segments.
         var segs: [(a: SIMD3<Double>, b: SIMD3<Double>)] = []
@@ -834,16 +866,19 @@ private struct SphereGeometry {
         }
 
         // Milky Way: sample the galactic equator (±9° band) → equatorial → horizon
-        // frame, brightest along the galactic midplane.
-        var mw: [(SIMD3<Double>, Double)] = []
+        // frame, brightest along the galactic midplane. Grouped by brightness
+        // (one path fill per band) and the invisible ±9° edge rows dropped.
+        var mwMap: [Int: [SIMD3<Double>]] = [:]
         for l in stride(from: 0.0, to: 360.0, by: 3.0) {
             for b in stride(from: -9.0, through: 9.0, by: 3.0) {
-                let eq = SphereGeometry.galacticToEquatorial(l: l, b: b)
                 let falloff = cos(b / 9.0 * .pi / 2)
-                mw.append((vecEquatorial(eq), falloff * falloff))
+                let glow = falloff * falloff
+                guard glow > 0.01 else { continue }
+                let eq = SphereGeometry.galacticToEquatorial(l: l, b: b)
+                mwMap[Int((glow * 100).rounded()), default: []].append(vecEquatorial(eq))
             }
         }
-        milkyWay = mw
+        milkyWayGroups = mwMap.map { (Double($0.key) / 100, $0.value) }
 
         let posByBody = Dictionary(uniqueKeysWithValues: chart.positions.map { ($0.body, $0.longitude) })
         let arcs: [AspectArc] = chart.aspects.compactMap { asp in
@@ -875,7 +910,7 @@ private struct SphereGeometry {
 
     /// True geocentric ecliptic latitude of a body, of date (0 for the Sun, the
     /// nodes, and Lilith, which lie on the ecliptic by definition).
-    static func eclipticLatitude(of body: AstroBody, at jd: JulianDay) -> Angle {
+    static func eclipticLatitude(of body: AstroBody, at jd: JulianDay) -> CelestialCore.Angle {
         switch body {
         case .sun, .northNode, .southNode, .blackMoonLilith: return .zero
         case .moon: return Moon.geocentric(at: jd).ecliptic.latitude
@@ -954,7 +989,7 @@ private struct SphereGeometry {
     }
 
     /// Horizon-frame unit vector: x = north, y = east, z = zenith.
-    static func unit(altitude alt: Angle, azimuth az: Angle) -> SIMD3<Double> {
+    static func unit(altitude alt: CelestialCore.Angle, azimuth az: CelestialCore.Angle) -> SIMD3<Double> {
         SIMD3(cos(alt.radians) * cos(az.radians),
               cos(alt.radians) * sin(az.radians),
               sin(alt.radians))
@@ -969,16 +1004,28 @@ private struct SphereGeometry {
         }
     }
 
-    static func starColor(_ bv: Double?) -> Color {
-        guard let bv else { return .white }
+    /// The star temperature palette, indexed by `colorBucket` (last = no B−V).
+    static let bucketColors: [Color] = [
+        Color(red: 0.74, green: 0.82, blue: 1.0),
+        Color(red: 0.92, green: 0.95, blue: 1.0),
+        Color(red: 1.0, green: 0.98, blue: 0.92),
+        Color(red: 1.0, green: 0.92, blue: 0.76),
+        Color(red: 1.0, green: 0.82, blue: 0.66),
+        .white,
+    ]
+
+    static func colorBucket(_ bv: Double?) -> Int {
+        guard let bv else { return 5 }
         switch bv {
-        case ..<0.0: return Color(red: 0.74, green: 0.82, blue: 1.0)
-        case 0.0..<0.3: return Color(red: 0.92, green: 0.95, blue: 1.0)
-        case 0.3..<0.6: return Color(red: 1.0, green: 0.98, blue: 0.92)
-        case 0.6..<1.0: return Color(red: 1.0, green: 0.92, blue: 0.76)
-        default: return Color(red: 1.0, green: 0.82, blue: 0.66)
+        case ..<0.0: return 0
+        case 0.0..<0.3: return 1
+        case 0.3..<0.6: return 2
+        case 0.6..<1.0: return 3
+        default: return 4
         }
     }
+
+    static func starColor(_ bv: Double?) -> Color { bucketColors[colorBucket(bv)] }
 
     static func planetColor(_ b: AstroBody) -> Color {
         switch b {
@@ -1038,46 +1085,62 @@ private struct SphereGeometry {
         // The additive backdrop (Milky Way, constellations, stars) is drawn in two
         // depth passes around an opaque "globe body" veil, so the **near** hemisphere
         // occludes the far one instead of the far side shining through.
+        // Everything here is batched — one path fill per pre-computed group —
+        // because this runs 30× a second.
         func drawMilkyWay(front: Bool) {
             ctx.drawLayer { layer in
                 layer.addFilter(.blur(radius: 6))
-                for m in milkyWay {
-                    let (pt, depth) = p(m.v)
-                    guard (depth >= 0) == front else { continue }
-                    let a = m.glow * (front ? 0.11 : 0.05)
-                    let r = 7.0
-                    layer.fill(Path(ellipseIn: CGRect(x: pt.x - r, y: pt.y - r, width: 2 * r, height: 2 * r)),
-                               with: .color(Color(red: 0.82, green: 0.86, blue: 1.0).opacity(a)))
+                for g in milkyWayGroups {
+                    var path = Path()
+                    for v in g.points {
+                        let (pt, depth) = p(v)
+                        guard (depth >= 0) == front else { continue }
+                        path.addEllipse(in: CGRect(x: pt.x - 7, y: pt.y - 7, width: 14, height: 14))
+                    }
+                    guard !path.isEmpty else { continue }
+                    layer.fill(path, with: .color(Color(red: 0.82, green: 0.86, blue: 1.0)
+                        .opacity(g.glow * (front ? 0.11 : 0.05))))
                 }
             }
         }
         func drawConstellations(front: Bool) {
+            var path = Path()
             for seg in constellationSegments {
                 let (pa, da) = p(seg.a); let (pb, db) = p(seg.b)
                 guard ((da + db) / 2 >= 0) == front else { continue }
-                ctx.stroke(Path { $0.move(to: pa); $0.addLine(to: pb) },
-                           with: .color(Color(red: 0.6, green: 0.7, blue: 1.0).opacity(front ? 0.16 : 0.06)),
-                           lineWidth: 0.5)
+                path.move(to: pa); path.addLine(to: pb)
             }
+            guard !path.isEmpty else { return }
+            ctx.stroke(path,
+                       with: .color(Color(red: 0.6, green: 0.7, blue: 1.0).opacity(front ? 0.16 : 0.06)),
+                       lineWidth: 0.5)
         }
         func drawStars(front: Bool) {
-            for s in starField {
-                let (pt, depth) = p(s.v)
-                guard (depth >= 0) == front else { continue }
-                let a = s.alpha * (front ? 1.0 : 1.0)   // far stars are revealed by the veil, not pre-dimmed
-                let r = s.size * (front ? 1.0 : 0.8)
-                if s.spike > 0, front {
-                    let L = s.spike
-                    ctx.drawLayer { layer in
-                        layer.addFilter(.blur(radius: 1.2))
+            for g in starGroups {
+                var path = Path()
+                for s in g.dots {
+                    let (pt, depth) = p(s.v)
+                    guard (depth >= 0) == front else { continue }
+                    let r = front ? s.size : s.size * 0.8
+                    path.addEllipse(in: CGRect(x: pt.x - r, y: pt.y - r, width: 2 * r, height: 2 * r))
+                }
+                guard !path.isEmpty else { continue }
+                // Far stars are revealed by the veil, not pre-dimmed.
+                ctx.fill(path, with: .color(g.color))
+            }
+            if front, !spikeStars.isEmpty {
+                ctx.drawLayer { layer in
+                    layer.addFilter(.blur(radius: 1.2))
+                    for s in spikeStars {
+                        let (pt, depth) = p(s.v)
+                        guard depth >= 0 else { continue }
+                        let L = s.spike
                         var path = Path()
                         path.move(to: CGPoint(x: pt.x - L, y: pt.y)); path.addLine(to: CGPoint(x: pt.x + L, y: pt.y))
                         path.move(to: CGPoint(x: pt.x, y: pt.y - L)); path.addLine(to: CGPoint(x: pt.x, y: pt.y + L))
-                        layer.stroke(path, with: .color(s.color.opacity(a * 0.7)), lineWidth: 0.6)
+                        layer.stroke(path, with: .color(s.color), lineWidth: 0.6)
                     }
                 }
-                ctx.fill(Path(ellipseIn: CGRect(x: pt.x - r, y: pt.y - r, width: 2 * r, height: 2 * r)),
-                         with: .color(s.color.opacity(a)))
             }
         }
 
@@ -1107,21 +1170,30 @@ private struct SphereGeometry {
         circle(ecliptic, color: .init(red: 0.5, green: 1.0, blue: 0.6), base: 0.85, width: 1.5, glow: true, ctx: ctx, p: p)
         circle(horizon, color: .white, base: 0.7, width: 1.2, ctx: ctx, p: p)
 
-        // Graduated horizon ticks every 10°, longer at the cardinals.
+        // Graduated horizon ticks every 10°, longer at the cardinals — batched
+        // into four strokes (major/minor × front/back).
+        var tickPaths = [Path(), Path(), Path(), Path()]   // majorF, majorB, minorF, minorB
         for az in stride(from: 0.0, to: 360.0, by: 10.0) {
             let major = az.truncatingRemainder(dividingBy: 90) == 0
             let (a0, d0) = p(SphereGeometry.unit(altitude: .degrees(major ? -3 : -1.6), azimuth: .degrees(az)))
             let (a1, _) = p(SphereGeometry.unit(altitude: .degrees(major ? 3 : 1.6), azimuth: .degrees(az)))
-            ctx.stroke(Path { $0.move(to: a0); $0.addLine(to: a1) },
-                       with: .color(.white.opacity(d0 >= 0 ? 0.5 : 0.16)), lineWidth: major ? 1.2 : 0.6)
+            let i = (major ? 0 : 2) + (d0 >= 0 ? 0 : 1)
+            tickPaths[i].move(to: a0); tickPaths[i].addLine(to: a1)
         }
+        ctx.stroke(tickPaths[0], with: .color(.white.opacity(0.5)), lineWidth: 1.2)
+        ctx.stroke(tickPaths[1], with: .color(.white.opacity(0.16)), lineWidth: 1.2)
+        ctx.stroke(tickPaths[2], with: .color(.white.opacity(0.5)), lineWidth: 0.6)
+        ctx.stroke(tickPaths[3], with: .color(.white.opacity(0.16)), lineWidth: 0.6)
 
-        // House-cusp ticks on the ecliptic.
+        // House-cusp ticks on the ecliptic — one fill per depth side.
+        var cuspFront = Path(), cuspBack = Path()
         for v in cuspTicks {
             let (pt, depth) = p(v)
-            ctx.fill(Path(ellipseIn: CGRect(x: pt.x - 1.3, y: pt.y - 1.3, width: 2.6, height: 2.6)),
-                     with: .color(.white.opacity(depth >= 0 ? 0.5 : 0.18)))
+            let rect = CGRect(x: pt.x - 1.3, y: pt.y - 1.3, width: 2.6, height: 2.6)
+            if depth >= 0 { cuspFront.addEllipse(in: rect) } else { cuspBack.addEllipse(in: rect) }
         }
+        ctx.fill(cuspFront, with: .color(.white.opacity(0.5)))
+        ctx.fill(cuspBack, with: .color(.white.opacity(0.18)))
 
         // Zodiac glyphs.
         for z in zodiac {
@@ -1162,15 +1234,21 @@ private struct SphereGeometry {
         // Planets, drawn back-to-front, with a soft glow. Glyph labels are spread
         // apart so a tight stellium stays legible (with a leader line when moved).
         let proj = planets.map { ($0, p($0.v)) }.sorted { $0.1.1 < $1.1.1 }
+        // All the soft glows share one blurred layer instead of one layer each.
+        ctx.drawLayer { layer in
+            layer.addFilter(.blur(radius: 4))
+            for entry in proj {
+                let (pt, depth) = entry.1
+                let color = SphereGeometry.planetColor(entry.0.body)
+                let a = depth >= 0 ? 1.0 : 0.4
+                layer.fill(Path(ellipseIn: CGRect(x: pt.x - 6, y: pt.y - 6, width: 12, height: 12)),
+                           with: .color(color.opacity(0.5 * a)))
+            }
+        }
         for entry in proj {
             let (pt, depth) = entry.1
             let color = SphereGeometry.planetColor(entry.0.body)
             let a = depth >= 0 ? 1.0 : 0.4
-            ctx.drawLayer { layer in
-                layer.addFilter(.blur(radius: 4))
-                layer.fill(Path(ellipseIn: CGRect(x: pt.x - 6, y: pt.y - 6, width: 12, height: 12)),
-                           with: .color(color.opacity(0.5 * a)))
-            }
             ctx.fill(Path(ellipseIn: CGRect(x: pt.x - 2.6, y: pt.y - 2.6, width: 5.2, height: 5.2)),
                      with: .color(color.opacity(a)))
             ctx.fill(Path(ellipseIn: CGRect(x: pt.x - 1, y: pt.y - 1, width: 2, height: 2)),

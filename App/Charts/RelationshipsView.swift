@@ -10,6 +10,7 @@ struct RelationshipsView: View {
     @Query(sort: \SavedChart.createdAt, order: .reverse) private var charts: [SavedChart]
     @State private var aID: PersistentIdentifier?
     @State private var bID: PersistentIdentifier?
+    @State private var showEditor = false
 
     private let tint = Theme.astro
 
@@ -48,6 +49,7 @@ struct RelationshipsView: View {
         .navigationTitle("Relationships")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear(perform: prefill)
+        .sheet(isPresented: $showEditor) { ChartEditorView() }
     }
 
     private var intro: some View {
@@ -87,13 +89,24 @@ struct RelationshipsView: View {
         .buttonStyle(.plain)
     }
 
+    // The empty state invites action in place (2026-08-08 feedback) instead of
+    // sending people hunting for where charts are made.
     private var needTwo: some View {
         VStack(spacing: 14) {
             LuminousGlyph(symbol: "heart.text.square", tint: tint, size: 84, glyphSize: 34)
-            Text("Save two charts first").font(.title3.weight(.semibold)).foregroundStyle(.white)
-            Text("Relationship astrology compares two people. Add at least two saved charts to compare them.")
+            Text(charts.count == 1 ? "Save one more chart" : "Save two charts first")
+                .font(.title3.weight(.semibold)).foregroundStyle(.white)
+            Text(charts.count == 1
+                 ? "Relationship astrology compares two people. Add one more saved chart to compare."
+                 : "Relationship astrology compares two people. Add at least two saved charts to compare them.")
                 .font(.subheadline).foregroundStyle(.white.opacity(0.6))
                 .multilineTextAlignment(.center)
+            Button { showEditor = true } label: {
+                Label("New Chart", systemImage: "plus")
+                    .font(.subheadline.weight(.medium))
+            }
+            .buttonStyle(.borderedProminent).tint(tint)
+            .padding(.top, 6)
         }
         .padding(40)
     }

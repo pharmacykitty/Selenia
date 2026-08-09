@@ -27,7 +27,15 @@ struct SavedChartView: View {
                     toolbarTrailing: AnyView(HStack(spacing: 2) {
                         birthdayButton
                         sphereLink(natal)
-                    })
+                    }),
+                    sphereInvite: AnyView(
+                        NavigationLink {
+                            sphereDestination(natal)
+                        } label: {
+                            SphereDomeCard(chart: natal, store: store)
+                        }
+                        .buttonStyle(.plain)
+                    )
                 )
             } else {
                 ProgressView()
@@ -68,12 +76,16 @@ struct SavedChartView: View {
 
     private func sphereLink(_ natal: NatalChart) -> some View {
         NavigationLink {
-            CelestialSphereView(chart: natal, title: name,
-                                subtitle: chart.subtitle, stars: SphereStars.bright(from: store),
-                                constellations: store?.constellations ?? [])
+            sphereDestination(natal)
         } label: {
             Image(systemName: "globe").accessibilityLabel("View in 3D sphere")
         }
         .tint(Theme.astro)
+    }
+
+    private func sphereDestination(_ natal: NatalChart) -> some View {
+        CelestialSphereView(chart: natal, title: name,
+                            subtitle: chart.subtitle, stars: SphereStars.bright(from: store),
+                            constellations: store?.constellations ?? [])
     }
 }

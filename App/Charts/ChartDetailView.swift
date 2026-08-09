@@ -14,6 +14,9 @@ struct ChartDetailView: View {
     var natalForTransits: NatalChart?
     /// Optional trailing toolbar content (e.g. the 3D-sphere button).
     var toolbarTrailing: AnyView?
+    /// Optional in-scroll invitation to the 3D sphere (the live dome card),
+    /// shown right below the wheel.
+    var sphereInvite: AnyView?
 
     @State private var reading: Reading?
     @State private var extraPoints: [BodyPosition] = []
@@ -23,12 +26,14 @@ struct ChartDetailView: View {
     private let tint = Theme.astro
 
     init(chart: NatalChart, title: String, subtitle: String? = nil,
-         natalForTransits: NatalChart? = nil, toolbarTrailing: AnyView? = nil) {
+         natalForTransits: NatalChart? = nil, toolbarTrailing: AnyView? = nil,
+         sphereInvite: AnyView? = nil) {
         self.chart = chart
         self.title = title
         self.subtitle = subtitle
         self.natalForTransits = natalForTransits
         self.toolbarTrailing = toolbarTrailing
+        self.sphereInvite = sphereInvite
     }
 
     private var patterns: [ChartPattern] { Patterns.detect(in: chart) }
@@ -54,6 +59,7 @@ struct ChartDetailView: View {
                         .font(.caption).foregroundStyle(.white.opacity(0.5))
                         .frame(maxWidth: .infinity).multilineTextAlignment(.center)
                 }
+                if let sphereInvite { sphereInvite }
                 chartRulerCard
                 elementalBalanceCard
                 positionsCard
@@ -152,25 +158,25 @@ struct ChartDetailView: View {
 
     // MARK: Patterns (F1)
 
+    // Chips wrap onto new lines instead of scrolling — no sideways scrolling
+    // anywhere in the app (2026-08-08 feedback round).
     private var patternChips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(patterns) { p in
-                    Button { reading = patternReading(p) } label: {
-                        HStack(spacing: 6) {
-                            Text(p.kind.glyph).foregroundStyle(tint)
-                            Text(p.kind.title).font(.caption.weight(.semibold)).foregroundStyle(.white)
-                            Text(p.detail).font(.caption2).foregroundStyle(.white.opacity(0.5))
-                        }
-                        .padding(.horizontal, 12).padding(.vertical, 7)
-                        .background(.white.opacity(0.05), in: Capsule())
-                        .overlay(Capsule().strokeBorder(tint.opacity(0.35), lineWidth: 1))
+        FlowLayout(spacing: 8) {
+            ForEach(patterns) { p in
+                Button { reading = patternReading(p) } label: {
+                    HStack(spacing: 6) {
+                        Text(p.kind.glyph).foregroundStyle(tint)
+                        Text(p.kind.title).font(.caption.weight(.semibold)).foregroundStyle(.white)
+                        Text(p.detail).font(.caption2).foregroundStyle(.white.opacity(0.5))
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .background(.white.opacity(0.05), in: Capsule())
+                    .overlay(Capsule().strokeBorder(tint.opacity(0.35), lineWidth: 1))
                 }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 2)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func patternReading(_ p: ChartPattern) -> Reading {
