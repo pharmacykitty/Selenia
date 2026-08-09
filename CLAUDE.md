@@ -2,7 +2,7 @@
 
 > A real-ephemeris astrology app for iOS — natal charts, transits, synastry, predictive work, and a 3D celestial sphere — built to be genuinely beautiful. Split out of the Astrolabe planetarium app on 2026-07-15 so each app has one focused identity.
 
-**Status:** pre-release. The name is a working title (`com.astrolabe.ecliptica`); final App Store name TBD.
+**Status:** pre-release. The name is a working title (`pink.ely.ecliptica`); final App Store name TBD.
 
 ## The vision
 
@@ -49,7 +49,7 @@ xcodebuild -project Ecliptica.xcodeproj -scheme Ecliptica \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   ENABLE_DEBUG_DYLIB=NO ENABLE_PREVIEWS=NO build
 xcrun simctl install booted <BUILT_PRODUCTS_DIR>/Ecliptica.app
-xcrun simctl launch booted com.astrolabe.ecliptica
+xcrun simctl launch booted pink.ely.ecliptica
 xcrun simctl io booted screenshot shot.png
 ```
 (`ENABLE_DEBUG_DYLIB=NO` matters — the debug-dylib thunk never registers with simctl.)

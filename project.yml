@@ -1,6 +1,6 @@
 name: Ecliptica
 options:
-  bundleIdPrefix: com.astrolabe
+  bundleIdPrefix: pink.ely
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
@@ -34,7 +34,7 @@ targets:
         product: Astrology
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.astrolabe.ecliptica
+        PRODUCT_BUNDLE_IDENTIFIER: pink.ely.ecliptica
         TARGETED_DEVICE_FAMILY: "1,2"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: YES
