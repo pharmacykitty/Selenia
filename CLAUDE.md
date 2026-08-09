@@ -56,6 +56,14 @@ xcrun simctl io booted screenshot shot.png
 
 Debug launch args (screenshot harnesses): `-snapshotSphere [tour|time]`, `-exportTest`, `-snapshotAstro <screen>`.
 
+## Backlog — UX feedback round (2026-08-08, Kagarino via Discord + Elysia; queued next)
+
+- Remove horizontal scrolling (app-wide — find which screens overflow horizontally).
+- Sky Now: move the `?` / `…` buttons higher (into the top chrome; they float in a band below the nav bar).
+- Sky Now sphere: performance pass — "very laggy and uses CPU".
+- Make the sphere a visible invitation to tap ("make the thing with the globe more prominent").
+- Relationships empty state ("Save two charts first"): add a create-chart button in place.
+
 ## Backlog (carried from the split)
 
 - ★ Transit-to-sky: tap a transit, see where that planet is in the real sky (deep-link to the Astrolabe app?).
