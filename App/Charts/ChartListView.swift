@@ -85,6 +85,9 @@ struct ChartListView: View {
     }
 
     private func delete(_ offsets: IndexSet) {
-        for i in offsets { context.delete(charts[i]) }
+        for i in offsets {
+            BirthdayReminders.disable(for: charts[i])   // no orphaned annual alerts
+            context.delete(charts[i])
+        }
     }
 }

@@ -35,6 +35,10 @@ final class SavedChart {
 
     var createdAt: Date
 
+    /// Pending-notification id of the annual birthday reminder; nil = off.
+    /// (Doubles as the toggle — see `BirthdayReminders`.)
+    var birthdayReminderID: String?
+
     init(
         name: String,
         year: Int, month: Int, day: Int, hour: Int, minute: Int,

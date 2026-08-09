@@ -29,6 +29,8 @@ struct AstrologySnapshotHarness: View {
                     .modelContainer(Self.sampleContainer)
             case "synastry":
                 SynastrySnapshot().modelContainer(Self.sampleContainer)
+            case "saved":
+                SavedSnapshot(store: store).modelContainer(Self.sampleContainer)
             case "guide":
                 SphereGuideSheet(chart: sample)
             case "progressions":
@@ -66,6 +68,21 @@ struct AstrologySnapshotHarness: View {
         try? c.mainContext.save()   // stable persistentModelIDs for the pickers
         return c
     }()
+}
+
+/// A saved chart's own screen (birthday-reminder + sphere toolbar).
+private struct SavedSnapshot: View {
+    var store: StarCatalogStore
+    @Query(sort: \SavedChart.createdAt) private var charts: [SavedChart]
+    var body: some View {
+        NavigationStack {
+            if let c = charts.first {
+                SavedChartView(chart: c, store: store)
+            } else {
+                Text("No sample chart").foregroundStyle(.white)
+            }
+        }
+    }
 }
 
 /// Wrapper that reads the two sample charts from the in-memory container.

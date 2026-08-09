@@ -16,7 +16,7 @@ App/
   EclipticaApp.swift   # @main; SwiftData container (SavedChart); snapshot-harness launch args
   Charts/              # chart UI: detail/editor/list, transits, predictive, synastry,
                        #   CelestialSphereView (3D sphere), SphereExport, ChartShareCard,
-                       #   TransitNotifications, SavedChart (@Model)
+                       #   TransitNotifications, BirthdayReminders, SavedChart (@Model)
   Screens/             # AstrologyHomeView (root hub), AstrologyView (Sky Now), AstrologyModel,
                        #   ChartWheel, AboutView (Sources — the canonical attribution list)
   Sky/                 # StarCatalogStore + Constellations (loaders for the sphere's star field)

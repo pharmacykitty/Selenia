@@ -12,6 +12,7 @@ struct SavedChartView: View {
     var store: StarCatalogStore? = nil
 
     @State private var natal: NatalChart?
+    @State private var reminderDenied = false
 
     private var name: String { chart.name.isEmpty ? "Chart" : chart.name }
 
@@ -23,7 +24,10 @@ struct SavedChartView: View {
                     title: name,
                     subtitle: chart.subtitle,
                     natalForTransits: natal,
-                    toolbarTrailing: AnyView(sphereLink(natal))
+                    toolbarTrailing: AnyView(HStack(spacing: 2) {
+                        birthdayButton
+                        sphereLink(natal)
+                    })
                 )
             } else {
                 ProgressView()
@@ -35,6 +39,31 @@ struct SavedChartView: View {
             }
         }
         .task(id: chart.persistentModelID) { natal = chart.makeChart() }
+    }
+
+    /// Toggle the annual birthday notification for this chart's person. The
+    /// cake fills when armed; denied notification permission gets one gentle
+    /// pointer to Settings instead of a silently dead button.
+    private var birthdayButton: some View {
+        let on = chart.birthdayReminderID != nil
+        return Button {
+            Task { @MainActor in
+                if on {
+                    BirthdayReminders.disable(for: chart)
+                } else if await !BirthdayReminders.enable(for: chart) {
+                    reminderDenied = true
+                }
+            }
+        } label: {
+            Image(systemName: on ? "birthday.cake.fill" : "birthday.cake")
+                .accessibilityLabel(on ? "Birthday reminder on" : "Remind me of their birthday")
+        }
+        .tint(Theme.astro)
+        .alert("Notifications are off", isPresented: $reminderDenied) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Allow notifications for Ecliptica in Settings to get birthday reminders.")
+        }
     }
 
     private func sphereLink(_ natal: NatalChart) -> some View {

@@ -14,7 +14,11 @@ enum TransitNotifications {
         let granted = (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
         guard granted else { return false }
 
-        center.removeAllPendingNotificationRequests()
+        // Replace only OUR pending alerts — birthday reminders (BirthdayReminders,
+        // "birthday-" ids) are annual standing requests and must survive this.
+        let pending = await center.pendingNotificationRequests().map(\.identifier)
+        center.removePendingNotificationRequests(
+            withIdentifiers: pending.filter { !$0.hasPrefix(BirthdayReminders.idPrefix) })
         var requests: [UNNotificationRequest] = []
 
         if let r = retrograde, r.start > Date() {
