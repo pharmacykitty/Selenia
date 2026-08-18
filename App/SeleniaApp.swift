@@ -3,7 +3,7 @@ import SwiftData
 import CelestialCore
 
 @main
-struct EclipticaApp: App {
+struct SeleniaApp: App {
     /// The HYG star catalog + constellation figures backing the 3D celestial
     /// sphere. Loaded eagerly so the sphere's star field is warm on first open.
     @State private var store = StarCatalogStore()

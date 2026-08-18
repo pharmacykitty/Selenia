@@ -50,7 +50,7 @@ struct AstrologyHomeView: View {
             }
         }
         // The serif hero below owns the name (the sister apps' shared voice);
-        // a nav-bar "Ecliptica" directly above it would print it twice.
+        // a nav-bar "Selenia" directly above it would print it twice.
         .navigationBarTitleDisplayMode(.inline)
         .buttonStyle(.plain)
         .task { await model.start() }
@@ -61,7 +61,7 @@ struct AstrologyHomeView: View {
     /// The serif hero — the same large-title voice Astrolabe's screens open with.
     private var header: some View {
         VStack(spacing: 4) {
-            Text("Ecliptica")
+            Text("Selenia")
                 .font(.system(.largeTitle, design: .serif).weight(.bold))
                 .foregroundStyle(.white)
             Text("The sky, read for you")

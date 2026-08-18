@@ -70,7 +70,7 @@ struct SavedChartView: View {
         .alert("Notifications are off", isPresented: $reminderDenied) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text("Allow notifications for Ecliptica in Settings to get birthday reminders.")
+            Text("Allow notifications for Selenia in Settings to get birthday reminders.")
         }
     }
 

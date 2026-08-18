@@ -1,8 +1,8 @@
-# Ecliptica
+# Selenia
 
-A real-ephemeris astrology app for iOS: natal charts, transits, progressions & returns, synastry, daily readings, and a 3D celestial sphere that draws your chart onto the *actual* sky (real HYG stars + constellation figures).
+A real-ephemeris astrology app for iOS (formerly the Ecliptica working title): natal charts, transits, progressions & returns, synastry, daily readings, and a 3D celestial sphere that draws your chart onto the *actual* sky (real HYG stars + constellation figures).
 
-Split out of the [Astrolabe](../Astrolabe) planetarium app — same math engine, one focused product.
+Sister app of [Stellaria](../Astrolabe) (the planetarium; repo folder still says Astrolabe) — same math engine, one focused product.
 
 <table>
   <tr>
@@ -24,7 +24,7 @@ Requires sibling checkouts (packages are referenced by relative path):
 ```sh
 brew install xcodegen
 xcodegen generate
-open Ecliptica.xcodeproj
+open Selenia.xcodeproj
 ```
 
 ## Tests

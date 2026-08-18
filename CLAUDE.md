@@ -1,8 +1,8 @@
-# Ecliptica (working title)
+# Selenia
 
 > A real-ephemeris astrology app for iOS — natal charts, transits, synastry, predictive work, and a 3D celestial sphere — built to be genuinely beautiful. Split out of the Astrolabe planetarium app on 2026-07-15 so each app has one focused identity.
 
-**Status:** pre-release. The name is a working title (`pink.ely.ecliptica`); final App Store name TBD.
+**Status:** pre-release. **Name decided 2026-08-18: Selenia** (the moon-flower genus; App Store availability verified against the live catalog — no exact-name app; ASC reservation + trademark/domain checks pending). Sister app of Stellaria (the astronomy half, ex-Astrolabe). Target/bundle renamed: `Selenia` / `pink.ely.selenia`, `SeleniaApp.swift`. The repo folder is still `~/Developer/Ecliptica` — rename deliberately, it touches sibling-path tooling. ⚠️ Bundle-id change = a fresh install on device (local SwiftData charts don't carry over).
 
 ## The vision
 
@@ -11,9 +11,9 @@ Everything is computed, not looked up: charts run on real ephemeris math (`Celes
 ## Architecture
 
 ```
-project.yml            # XcodeGen spec — Ecliptica.xcodeproj is generated, not committed
+project.yml            # XcodeGen spec — Selenia.xcodeproj is generated, not committed
 App/
-  EclipticaApp.swift   # @main; SwiftData container (SavedChart); snapshot-harness launch args
+  SeleniaApp.swift     # @main; SwiftData container (SavedChart); snapshot-harness launch args
   Charts/              # chart UI: detail/editor/list, transits, predictive, synastry,
                        #   CelestialSphereView (3D sphere), SphereExport, ChartShareCard,
                        #   TransitNotifications, BirthdayReminders, SavedChart (@Model)
@@ -45,11 +45,11 @@ App/
 
 ```sh
 xcodegen generate
-xcodebuild -project Ecliptica.xcodeproj -scheme Ecliptica \
+xcodebuild -project Selenia.xcodeproj -scheme Selenia \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
   ENABLE_DEBUG_DYLIB=NO ENABLE_PREVIEWS=NO build
-xcrun simctl install booted <BUILT_PRODUCTS_DIR>/Ecliptica.app
-xcrun simctl launch booted pink.ely.ecliptica
+xcrun simctl install booted <BUILT_PRODUCTS_DIR>/Selenia.app
+xcrun simctl launch booted pink.ely.selenia
 xcrun simctl io booted screenshot shot.png
 ```
 (`ENABLE_DEBUG_DYLIB=NO` matters — the debug-dylib thunk never registers with simctl.)
