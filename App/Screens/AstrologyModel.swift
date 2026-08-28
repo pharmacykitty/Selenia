@@ -24,6 +24,13 @@ final class AstrologyModel: NSObject, CLLocationManagerDelegate {
     }
 
     func start() async {
+        if let fixed = SnapshotLocation.coordinate {
+            // Screenshot run: no prompt, no updates, just the given observer.
+            let coord = CLLocationCoordinate2D(latitude: fixed.latitude, longitude: fixed.longitude)
+            chart = AstrologyModel.makeChart(at: coord)
+            locationLabel = "Live sky"
+            return
+        }
         manager.requestWhenInUseAuthorization()
         manager.startUpdatingLocation()
     }
