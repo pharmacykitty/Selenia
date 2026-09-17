@@ -151,7 +151,7 @@ enum SphereExport {
             .components(separatedBy: CharacterSet.alphanumerics.union(CharacterSet(charactersIn: "-")).inverted)
             .joined()
         return FileManager.default.temporaryDirectory
-            .appendingPathComponent("astrolabe-\(safe.isEmpty ? "sphere" : safe)").appendingPathExtension(ext)
+            .appendingPathComponent("selenia-\(safe.isEmpty ? "sphere" : safe)").appendingPathExtension(ext)
     }
 }
 

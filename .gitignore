@@ -19,3 +19,6 @@ Selenia.xcodeproj/
 
 # Screenshot scratch (simctl verification shots)
 scratchshots/
+
+# Kept on the maintainer's machine, not published
+CLAUDE.md

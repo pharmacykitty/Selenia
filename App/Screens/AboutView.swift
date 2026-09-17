@@ -144,10 +144,10 @@ enum SourceCatalog {
         SourceGroup(title: "Star Catalogs", tint: .yellow, entries: [
             SourceEntry(name: "HYG Database",
                         detail: "~119k stars combining the Hipparcos, Yale Bright Star, and Gliese catalogs — the real star field behind the 3D celestial sphere. Compiled by David Nash (astronexus).",
-                        license: "Public domain",
+                        license: "CC BY-SA 4.0",
                         url: "https://github.com/astronexus/HYG-Database"),
             SourceEntry(name: "Hipparcos & Tycho Catalogues",
-                        detail: "ESA's astrometric survey — the precise star positions underlying the HYG data. (This app uses sky directions only; the sister Astrolabe app uses the parallax distances too.)",
+                        detail: "ESA's astrometric survey — the precise star positions underlying the HYG data. (This app uses sky directions only; the sister Astrelia app uses the parallax distances too.)",
                         license: "ESA / public"),
             SourceEntry(name: "Constellation lines",
                         detail: "Stick-figure constellation geometry from the d3-celestial project by Olaf Frohn, drawn faintly on the celestial sphere.",

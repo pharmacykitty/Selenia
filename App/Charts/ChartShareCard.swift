@@ -62,7 +62,7 @@ struct ChartShareCard: View {
     private var wordmark: some View {
         HStack(spacing: 6) {
             Image(systemName: "sparkles").font(.system(size: 11))
-            Text("ASTROLABE").font(.system(size: 12, weight: .semibold)).tracking(3)
+            Text("SELENIA").font(.system(size: 12, weight: .semibold)).tracking(3)
         }
         .foregroundStyle(tint.opacity(0.8))
         .padding(.top, 8)
@@ -172,6 +172,6 @@ func renderChartShareCard(chart: NatalChart, title: String, subtitle: String,
     guard let image = renderer.uiImage, let data = image.pngData() else { return nil }
     let safe = title.isEmpty ? "chart" : title.replacingOccurrences(of: " ", with: "-")
     let url = FileManager.default.temporaryDirectory
-        .appendingPathComponent("astrolabe-\(safe)-\(style.rawValue.prefix(4))").appendingPathExtension("png")
+        .appendingPathComponent("selenia-\(safe)-\(style.rawValue.prefix(4))").appendingPathExtension("png")
     do { try data.write(to: url); return url } catch { return nil }
 }
